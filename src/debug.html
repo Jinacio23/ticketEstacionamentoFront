@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teste de Diagnóstico</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #1976d2;
+      }
+      button {
+        padding: 10px 15px;
+        background-color: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background-color: #1565c0;
+      }
+      .error {
+        color: red;
+        background-color: #ffebee;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+      .success {
+        color: green;
+        background-color: #e8f5e9;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Diagnóstico de Sistema</h1>
+      <p>
+        Esta página de teste ajuda a identificar problemas de inicialização no
+        sistema de Estacionamento.
+      </p>
+
+      <div>
+        <h2>1. Teste de JavaScript</h2>
+        <button onclick="alert('JavaScript está funcionando!')">
+          Testar JavaScript
+        </button>
+      </div>
+
+      <div>
+        <h2>2. Teste de Conexão com Backend</h2>
+        <button id="testBackend">Testar Conexão com Backend</button>
+        <div id="backendResult"></div>
+      </div>
+
+      <div>
+        <h2>3. Informações do Navegador</h2>
+        <div id="browserInfo"></div>
+      </div>
+
+      <div>
+        <h2>4. Próximos Passos</h2>
+        <ul>
+          <li>Verifique os resultados dos testes acima</li>
+          <li>
+            Confira o console do navegador (F12) para ver erros detalhados
+          </li>
+          <li>Certifique-se de que o backend está em execução</li>
+          <li>Verifique as versões das dependências</li>
+          <li>Tente desabilitar temporariamente componentes complexos</li>
+        </ul>
+      </div>
+
+      <div id="additionalInfo" style="margin-top: 30px">
+        <h3>Detalhes Técnicos:</h3>
+        <pre id="technicalInfo"></pre>
+      </div>
+    </div>
+
+    <script>
+      // Exibir informações do navegador
+      document.getElementById("browserInfo").innerHTML = `
+        <ul>
+          <li><strong>Navegador:</strong> ${navigator.userAgent}</li>
+          <li><strong>Versão:</strong> ${navigator.appVersion}</li>
+          <li><strong>Plataforma:</strong> ${navigator.platform}</li>
+          <li><strong>Cookies Habilitados:</strong> ${navigator.cookieEnabled}</li>
+        </ul>
+      `;
+
+      // Testar conexão com o backend
+      document
+        .getElementById("testBackend")
+        .addEventListener("click", function () {
+          const resultDiv = document.getElementById("backendResult");
+          resultDiv.innerHTML = "<p>Testando conexão...</p>";
+
+          fetch("http://localhost:8080/api/estacionamento")
+            .then((response) => {
+              if (response.ok) {
+                resultDiv.innerHTML =
+                  '<p class="success">✅ Conexão bem-sucedida! O backend está funcionando.</p>';
+                return response.json();
+              } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+            })
+            .then((data) => {
+              document.getElementById("technicalInfo").textContent =
+                "Dados recebidos do backend:\n" + JSON.stringify(data, null, 2);
+            })
+            .catch((error) => {
+              resultDiv.innerHTML = `<p class="error">❌ Erro de conexão: ${error.message}</p>
+               <p>Verifique se:</p>
+               <ul>
+                 <li>O servidor backend está rodando</li>
+                 <li>A URL está correta (http://localhost:8080)</li>
+                 <li>Não há problemas de CORS</li>
+               </ul>`;
+            });
+        });
+    </script>
+  </body>
+</html>

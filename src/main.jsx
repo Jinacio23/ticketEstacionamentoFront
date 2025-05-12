@@ -1,30 +1,17 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
 
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import Home from './routes/Home.jsx'
-import Page from './routes/Page.jsx'
+// Certifique-se de que o elemento root existe
+const rootElement = document.getElementById("root");
 
-const router = createBrowserRouter([
-  {
-    element: <App />,
-    children: [
-      {
-        path: "/",
-        element: <Home />
-      },
-      {
-        path: "/page",
-        element: <Page />
-      }
-    ]
-  }
-]);
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-)
+if (!rootElement) {
+  console.error('Não foi possível encontrar o elemento com id "root"');
+} else {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
