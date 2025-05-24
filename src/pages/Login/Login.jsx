@@ -95,7 +95,6 @@ export default function Login() {
     e.preventDefault();
 
     if (validate()) {
-      console.log(`Nome: ${formData.name} | Senha: ${formData.password}`);
       try {
         await login(formData.name, formData.password);
         
