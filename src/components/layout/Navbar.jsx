@@ -24,11 +24,13 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../../contexts/AppContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Navbar = ({ toggleSidebar, isSidebarOpen, title, toggleDarkMode }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useAppContext();
+  const { logout } = useAuth();
 
   const [notificationsAnchor, setNotificationsAnchor] = useState(null);
   const [profileAnchor, setProfileAnchor] = useState(null);
@@ -53,6 +55,11 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, title, toggleDarkMode }) => {
     navigate(path);
     handleProfileClose();
   };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  }
 
   return (
     <AppBar
@@ -232,14 +239,14 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, title, toggleDarkMode }) => {
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem disabled>
+            {/* <MenuItem disabled>
               <Typography variant="subtitle1">{user.name}</Typography>
             </MenuItem>
             <MenuItem disabled>
               <Typography variant="body2" color="text.secondary">
                 {user.email}
               </Typography>
-            </MenuItem>
+            </MenuItem> */}
             <Divider />
             <MenuItem onClick={() => handleNavigate("/configuracoes")}>
               <ListItemIcon>
@@ -251,7 +258,7 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, title, toggleDarkMode }) => {
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Sair</ListItemText>
+              <ListItemText onClick={handleLogout}>Sair</ListItemText>
             </MenuItem>
           </Menu>
         </Box>
