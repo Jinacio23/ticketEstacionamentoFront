@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import estacionamentoService from "../services/estacionamentoService";
+import { useAuth } from "./AuthContext"; // Importando o contexto de autenticação
 
 // Criar o contexto
 const AppContext = createContext();
@@ -13,72 +14,120 @@ export const AppProvider = ({ children }) => {
   const [estacionamentos, setEstacionamentos] = useState([]);
   const [estacionamentosAtivos, setEstacionamentosAtivos] = useState([]);
   const [loadingEstacionamentos, setLoadingEstacionamentos] = useState(false);
+  const [estacionamentoError, setEstacionamentoError] = useState(null);
 
   // Estado para tema
-  const [darkMode, setDarkMode] = useState(false);
+   const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
 
-  // Estado para usuário (simulado)
-  const [user, setUser] = useState({
-    name: "Usuário Teste",
-    email: "usuario@teste.com",
-    role: "admin",
-  });
+  // Obter o contexto de autenticação
+  const { isAuthenticated } = useAuth();
 
-  // Carregar estacionamentos
+  // Carregar estacionamentos apenas quando autenticado
   const carregarEstacionamentos = async () => {
+    if (!isAuthenticated) {
+      console.log("Não autenticado, carregamento de estacionamentos pulado");
+      return;
+    }
+
     try {
+      setEstacionamentoError(null);
       setLoadingEstacionamentos(true);
       const data = await estacionamentoService.listarEstacionamentos();
       setEstacionamentos(data);
       setEstacionamentosAtivos(data.filter((est) => est.status));
-      setLoadingEstacionamentos(false);
     } catch (error) {
       console.error("Erro ao carregar estacionamentos:", error);
+      setEstacionamentoError(
+        error.response?.data?.message || 
+        "Não foi possível carregar os estacionamentos. Verifique sua conexão ou tente novamente mais tarde."
+      );
+    } finally {
       setLoadingEstacionamentos(false);
     }
   };
 
   // Ações para estacionamentos
-  const adicionarEstacionamento = (estacionamento) => {
-    setEstacionamentos([...estacionamentos, estacionamento]);
-    if (estacionamento.status) {
-      setEstacionamentosAtivos([...estacionamentosAtivos, estacionamento]);
-    }
-  };
-
-  const atualizarEstacionamento = (id, dadosAtualizados) => {
-    const estacionamentoIndex = estacionamentos.findIndex(
-      (est) => est.id === id
-    );
-    if (estacionamentoIndex !== -1) {
-      const novosEstacionamentos = [...estacionamentos];
-      novosEstacionamentos[estacionamentoIndex] = {
-        ...novosEstacionamentos[estacionamentoIndex],
-        ...dadosAtualizados,
-      };
-      setEstacionamentos(novosEstacionamentos);
-      setEstacionamentosAtivos(
-        novosEstacionamentos.filter((est) => est.status)
+  const adicionarEstacionamento = async (estacionamento) => {
+    try {
+      setEstacionamentoError(null);
+      const novoEstacionamento = await estacionamentoService.criarEstacionamento(estacionamento);
+      setEstacionamentos([...estacionamentos, novoEstacionamento]);
+      if (novoEstacionamento.status) {
+        setEstacionamentosAtivos([...estacionamentosAtivos, novoEstacionamento]);
+      }
+      return novoEstacionamento;
+    } catch (error) {
+      console.error("Erro ao adicionar estacionamento:", error);
+      setEstacionamentoError(
+        error.response?.data?.message || 
+        "Não foi possível adicionar o estacionamento. Tente novamente."
       );
+      throw error;
     }
   };
 
-  const removerEstacionamento = (id) => {
-    setEstacionamentos(estacionamentos.filter((est) => est.id !== id));
-    setEstacionamentosAtivos(
-      estacionamentosAtivos.filter((est) => est.id !== id)
-    );
+  const atualizarEstacionamento = async (id, dadosAtualizados) => {
+    try {
+      setEstacionamentoError(null);
+      const estacionamentoAtualizado = await estacionamentoService.atualizarEstacionamento(id, dadosAtualizados);
+      
+      const estacionamentoIndex = estacionamentos.findIndex(
+        (est) => est.id === id
+      );
+      
+      if (estacionamentoIndex !== -1) {
+        const novosEstacionamentos = [...estacionamentos];
+        novosEstacionamentos[estacionamentoIndex] = estacionamentoAtualizado;
+        setEstacionamentos(novosEstacionamentos);
+        setEstacionamentosAtivos(
+          novosEstacionamentos.filter((est) => est.status)
+        );
+      }
+      
+      return estacionamentoAtualizado;
+    } catch (error) {
+      console.error("Erro ao atualizar estacionamento:", error);
+      setEstacionamentoError(
+        error.response?.data?.message || 
+        "Não foi possível atualizar o estacionamento. Tente novamente."
+      );
+      throw error;
+    }
+  };
+
+  const removerEstacionamento = async (id) => {
+    try {
+      setEstacionamentoError(null);
+      await estacionamentoService.excluirEstacionamento(id);
+      setEstacionamentos(estacionamentos.filter((est) => est.id !== id));
+      setEstacionamentosAtivos(
+        estacionamentosAtivos.filter((est) => est.id !== id)
+      );
+    } catch (error) {
+      console.error("Erro ao remover estacionamento:", error);
+      setEstacionamentoError(
+        error.response?.data?.message || 
+        "Não foi possível remover o estacionamento. Tente novamente."
+      );
+      throw error;
+    }
   };
 
   // Ações para tema
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+   const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem("darkMode", newDarkMode);
   };
 
-  // Efeito para carregar dados iniciais
+  // Efeito para carregar dados iniciais SOMENTE quando estiver autenticado
   useEffect(() => {
-    carregarEstacionamentos();
-  }, []);
+    if (isAuthenticated) {
+      carregarEstacionamentos();
+    }
+  }, [isAuthenticated]); // Agora depende do estado de autenticação
 
   // Valores a serem disponibilizados
   const contextValue = {
@@ -86,8 +135,8 @@ export const AppProvider = ({ children }) => {
     estacionamentos,
     estacionamentosAtivos,
     loadingEstacionamentos,
+    estacionamentoError,
     darkMode,
-    user,
 
     // Ações
     carregarEstacionamentos,
@@ -95,7 +144,6 @@ export const AppProvider = ({ children }) => {
     atualizarEstacionamento,
     removerEstacionamento,
     toggleDarkMode,
-    setUser,
   };
 
   return (
