@@ -40,17 +40,15 @@ const menuItems = [
 const Sidebar = ({ open }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const drawerWidth = 240;
 
   return (
     <Drawer
       variant="persistent"
       open={open}
       sx={{
-        width: drawerWidth,
         flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: drawerWidth,
+          width: "240",
           boxSizing: "border-box",
         },
       }}

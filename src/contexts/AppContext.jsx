@@ -1,31 +1,30 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from "react";
 import estacionamentoService from "../services/estacionamentoService";
-import { useAuth } from "./AuthContext"; // Importando o contexto de autenticação
+import { useAuth } from "./AuthContext";
 
-// Criar o contexto
 const AppContext = createContext();
 
-// Hook personalizado para acessar o contexto
 export const useAppContext = () => useContext(AppContext);
 
 // Provedor de contexto
 export const AppProvider = ({ children }) => {
-  // Estado para estacionamentos
   const [estacionamentos, setEstacionamentos] = useState([]);
-  const [estacionamentosAtivos, setEstacionamentosAtivos] = useState([]);
   const [loadingEstacionamentos, setLoadingEstacionamentos] = useState(false);
   const [estacionamentoError, setEstacionamentoError] = useState(null);
 
-  // Estado para tema
-   const [darkMode, setDarkMode] = useState(
+  const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
 
-  // Obter o contexto de autenticação
   const { isAuthenticated } = useAuth();
 
-  // Carregar estacionamentos apenas quando autenticado
-  const carregarEstacionamentos = async () => {
+  // useMemo para calcular estacionamentos ativos com base na lista atual
+  const estacionamentosAtivos = useMemo(() => {
+    return estacionamentos.filter((est) => est.status);
+  }, [estacionamentos]);
+
+  // useCallback para evitar recriação da função em cada render
+  const carregarEstacionamentos = useCallback(async () => {
     if (!isAuthenticated) {
       console.log("Não autenticado, carregamento de estacionamentos pulado");
       return;
@@ -36,7 +35,6 @@ export const AppProvider = ({ children }) => {
       setLoadingEstacionamentos(true);
       const data = await estacionamentoService.listarEstacionamentos();
       setEstacionamentos(data);
-      setEstacionamentosAtivos(data.filter((est) => est.status));
     } catch (error) {
       console.error("Erro ao carregar estacionamentos:", error);
       setEstacionamentoError(
@@ -46,18 +44,15 @@ export const AppProvider = ({ children }) => {
     } finally {
       setLoadingEstacionamentos(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  // Ações para estacionamentos
+  // Ações CRUD
   const adicionarEstacionamento = async (estacionamento) => {
     try {
       setEstacionamentoError(null);
-      const novoEstacionamento = await estacionamentoService.criarEstacionamento(estacionamento);
-      setEstacionamentos([...estacionamentos, novoEstacionamento]);
-      if (novoEstacionamento.status) {
-        setEstacionamentosAtivos([...estacionamentosAtivos, novoEstacionamento]);
-      }
-      return novoEstacionamento;
+      const novo = await estacionamentoService.criarEstacionamento(estacionamento);
+      setEstacionamentos((prev) => [...prev, novo]);
+      return novo;
     } catch (error) {
       console.error("Erro ao adicionar estacionamento:", error);
       setEstacionamentoError(
@@ -68,25 +63,14 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const atualizarEstacionamento = async (id, dadosAtualizados) => {
+  const atualizarEstacionamento = async (id, dados) => {
     try {
       setEstacionamentoError(null);
-      const estacionamentoAtualizado = await estacionamentoService.atualizarEstacionamento(id, dadosAtualizados);
-      
-      const estacionamentoIndex = estacionamentos.findIndex(
-        (est) => est.id === id
+      const atualizado = await estacionamentoService.atualizarEstacionamento(id, dados);
+      setEstacionamentos((prev) =>
+        prev.map((est) => (est.id === id ? atualizado : est))
       );
-      
-      if (estacionamentoIndex !== -1) {
-        const novosEstacionamentos = [...estacionamentos];
-        novosEstacionamentos[estacionamentoIndex] = estacionamentoAtualizado;
-        setEstacionamentos(novosEstacionamentos);
-        setEstacionamentosAtivos(
-          novosEstacionamentos.filter((est) => est.status)
-        );
-      }
-      
-      return estacionamentoAtualizado;
+      return atualizado;
     } catch (error) {
       console.error("Erro ao atualizar estacionamento:", error);
       setEstacionamentoError(
@@ -101,10 +85,7 @@ export const AppProvider = ({ children }) => {
     try {
       setEstacionamentoError(null);
       await estacionamentoService.excluirEstacionamento(id);
-      setEstacionamentos(estacionamentos.filter((est) => est.id !== id));
-      setEstacionamentosAtivos(
-        estacionamentosAtivos.filter((est) => est.id !== id)
-      );
+      setEstacionamentos((prev) => prev.filter((est) => est.id !== id));
     } catch (error) {
       console.error("Erro ao remover estacionamento:", error);
       setEstacionamentoError(
@@ -115,39 +96,46 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Ações para tema
-   const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem("darkMode", newDarkMode);
+  // Tema
+  const toggleDarkMode = () => {
+    const newDark = !darkMode;
+    setDarkMode(newDark);
+    localStorage.setItem("darkMode", newDark);
   };
 
-  // Efeito para carregar dados iniciais SOMENTE quando estiver autenticado
+  // Carregar dados ao autenticar
   useEffect(() => {
     if (isAuthenticated) {
       carregarEstacionamentos();
     }
-  }, [isAuthenticated]); // Agora depende do estado de autenticação
+  }, [isAuthenticated, carregarEstacionamentos]);
 
-  // Valores a serem disponibilizados
-  const contextValue = {
-    // Dados
+  // Memoizar o contexto para evitar renders desnecessários
+  const contextValue = useMemo(() => ({
     estacionamentos,
     estacionamentosAtivos,
     loadingEstacionamentos,
     estacionamentoError,
     darkMode,
 
-    // Ações
     carregarEstacionamentos,
     adicionarEstacionamento,
     atualizarEstacionamento,
     removerEstacionamento,
     toggleDarkMode,
-  };
+  }), [
+    estacionamentos,
+    estacionamentosAtivos,
+    loadingEstacionamentos,
+    estacionamentoError,
+    darkMode,
+    carregarEstacionamentos
+  ]);
 
   return (
-    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
+    <AppContext.Provider value={contextValue}>
+      {children}
+    </AppContext.Provider>
   );
 };
 
