@@ -14,6 +14,7 @@ import { useSnackbar } from "notistack";
 import SearchIcon from "@mui/icons-material/Search";
 import PrintIcon from "@mui/icons-material/Print";
 import QrCodeIcon from "@mui/icons-material/QrCode";
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import PageHeader from "../../components/common/PageHeader";
 import LoadingOverlay from "../../components/common/LoadingOverlay";
@@ -100,50 +101,78 @@ const Tickets = () => {
   };
 
   const handlePrintTicket = (ticket) => {
-    // Simulação de impressão - abriria uma nova janela com o ticket para impressão
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Ticket de Estacionamento</title>
-          <style>
-            body { font-family: Arial; margin: 0; padding: 20px; }
-            .ticket { border: 1px solid #ccc; padding: 20px; max-width: 300px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .info { margin-bottom: 10px; }
-            .footer { margin-top: 20px; text-align: center; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="ticket">
-            <div class="header">
-              <h2>Ticket de Estacionamento</h2>
-              <h3>${ticket.estacionamento.nome}</h3>
-            </div>
-            <div class="info">
-              <p><strong>Entrada:</strong> ${formatDateTime(
-                ticket.hrEntrada
-              )}</p>
-              <p><strong>Ticket:</strong> ${ticket.idTicket}</p>
-              <p><strong>Status:</strong> ${ticket.pago ? "Pago" : "Aberto"}</p>
-            </div>
-            <div class="footer">
-              <p>Apresente este ticket na saída</p>
-              <p>${ticket.estacionamento.endereco}</p>
-            </div>
-          </div>
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    enqueueSnackbar("Impressão de ticket não implementada nesta versão", {variant: "info",});
+    // if (!ticket) return;
+
+    // // Abre uma nova janela com o ticket para impressão
+    // const printWindow = window.open("");
+    // printWindow.document.write(`
+    //       <html>
+    //         <head>
+    //           <title>Ticket de Estacionamento</title>
+    //           <style>
+    //             body { font-family: Arial; margin: 0; padding: 20px; }
+    //             .ticket { border: 1px solid #ccc; padding: 20px; max-width: 300px; margin: 0 auto; }
+    //             .header { text-align: center; margin-bottom: 20px; }
+    //             .qrcode { text-align: center; margin: 20px 0; }
+    //             .qrcode img { width: 200px; height: 200px; }
+    //             .info { margin-bottom: 10px; }
+    //             .footer { margin-top: 20px; text-align: center; font-size: 12px; }
+    //           </style>
+    //         </head>
+    //         <body>
+    //           <div class="ticket">
+    //             <div class="header">
+    //               <h2>Ticket de Estacionamento</h2>
+    //               <h3>${ticket.estacionamento.nome}</h3>
+    //             </div>
+    //             <div class="qrcode">
+    //               <img src="data:image/png;base64,${ticket.qrCode}" alt="QR Code" />
+    //             </div>
+    //             <div class="info">
+    //               <p><strong>Entrada:</strong> ${formatDateTime(ticket.hr_entrada)}</p>
+    //               <p><strong>Token:</strong> ${ticket.token.substring(0, 8)}...</p>
+    //             </div>
+    //             <div class="footer">
+    //               <p>Apresente este ticket na saída</p>
+    //               <p>${ticket.estacionamento.endereco}</p>
+    //             </div>
+    //           </div>
+    //           <script>
+    //             window.onload = function() { window.print(); }
+    //           </script>
+    //         </body>
+    //       </html>
+    //     `);
+    // printWindow.document.close();
+  };
+
+  const qrCodeModal = () => {
+    enqueueSnackbar("Vizualização de QRcode não implementada nesta versão", {variant: "info"})
+  };
+
+  const handleClipbordCopypboard = async (token) => {
+    try {
+      await navigator.clipboard.writeText(token);
+      enqueueSnackbar("Token copiado para área de transferência", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar("Falha ao copiar token!", { variant: "error" });
+      console.error(err);
+    }
   };
 
   // Configuração do DataGrid
   const columns = [
-    { field: "idTicket", headerName: "ID", width: 70 },
+    {
+      field: "idTicket",
+      headerName: "ID",
+      width: 70
+    },
+    {
+      field: "qrCodeToken",
+      headerName: "Token",
+      width: 180,
+    },
     {
       field: "hrEntrada",
       headerName: "Entrada",
@@ -177,7 +206,7 @@ const Tickets = () => {
     {
       field: "pago",
       headerName: "Status",
-      width: 120,
+      width: 140,
       renderCell: (params) => <StatusBadge status={params.value} type="pago" />,
     },
     {
@@ -196,14 +225,26 @@ const Tickets = () => {
           </IconButton>
 
           {!params.row.pago && !params.row.hrSaida && (
-            <IconButton color="secondary" size="small">
+            <IconButton
+              onClick={qrCodeModal}
+             color="secondary" size="small">
               <QrCodeIcon fontSize="small" />
             </IconButton>
           )}
+
+          <IconButton
+            onClick={() => handleClipbordCopypboard(params.row.qrCodeToken)}
+          >
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
         </Box>
       ),
     },
   ];
+
+  useEffect(() => {
+    console.log(tickets);
+  }, [tickets])
 
   return (
     <div>

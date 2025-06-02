@@ -11,6 +11,7 @@ import {
   Card,
   CardContent,
   CardActions,
+  IconButton,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import QRCode from "qrcode.react";
@@ -29,8 +30,7 @@ const EntradaVeiculos = () => {
 
   const [loading, setLoading] = useState(false);
   const [estacionamentos, setEstacionamentos] = useState([]);
-  const [estacionamentoSelecionado, setEstacionamentoSelecionado] =
-    useState("");
+  const [estacionamentoSelecionado, setEstacionamentoSelecionado] = useState();
   const [ticket, setTicket] = useState(null);
 
   // Carregar estacionamentos
@@ -70,14 +70,11 @@ const EntradaVeiculos = () => {
     if (!estacionamentoSelecionado) {
       enqueueSnackbar("Selecione um estacionamento", { variant: "warning" });
       return;
-    }
-
+    }    
     try {
       setLoading(true);
-      const novoTicket = await ticketService.gerarTicket(
-        estacionamentoSelecionado
-      );
-      setTicket(novoTicket);
+      const novoTicket = await ticketService.gerarTicket(estacionamentoSelecionado);
+      setTicket(novoTicket);      
       enqueueSnackbar("Ticket gerado com sucesso", { variant: "success" });
       setLoading(false);
     } catch (error) {
