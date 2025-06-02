@@ -242,10 +242,6 @@ const Tickets = () => {
     },
   ];
 
-  useEffect(() => {
-    console.log(tickets);
-  }, [tickets])
-
   return (
     <div>
       <LoadingOverlay open={loading} />
