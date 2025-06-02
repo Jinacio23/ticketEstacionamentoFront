@@ -254,11 +254,11 @@ const Navbar = ({ toggleSidebar, isSidebarOpen, title, toggleDarkMode }) => {
               </ListItemIcon>
               <ListItemText>Configurações</ListItemText>
             </MenuItem>
-            <MenuItem onClick={handleProfileClose}>
+            <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText onClick={handleLogout}>Sair</ListItemText>
+              <ListItemText>Sair</ListItemText>
             </MenuItem>
           </Menu>
         </Box>
