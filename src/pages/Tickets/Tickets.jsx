@@ -8,6 +8,11 @@ import {
   MenuItem,
   InputAdornment,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useSnackbar } from "notistack";
@@ -37,6 +42,8 @@ const Tickets = () => {
   const [estacionamentos, setEstacionamentos] = useState([]);
   const [estacionamentoSelecionado, setEstacionamentoSelecionado] =
     useState("");
+  const [qrCodeModalOpen, setQrCodeModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Carregar estacionamentos
   useEffect(() => {
@@ -101,54 +108,76 @@ const Tickets = () => {
   };
 
   const handlePrintTicket = (ticket) => {
-    enqueueSnackbar("Impressão de ticket não implementada nesta versão", {variant: "info",});
-    // if (!ticket) return;
+    if (!ticket) return;
 
-    // // Abre uma nova janela com o ticket para impressão
-    // const printWindow = window.open("");
-    // printWindow.document.write(`
-    //       <html>
-    //         <head>
-    //           <title>Ticket de Estacionamento</title>
-    //           <style>
-    //             body { font-family: Arial; margin: 0; padding: 20px; }
-    //             .ticket { border: 1px solid #ccc; padding: 20px; max-width: 300px; margin: 0 auto; }
-    //             .header { text-align: center; margin-bottom: 20px; }
-    //             .qrcode { text-align: center; margin: 20px 0; }
-    //             .qrcode img { width: 200px; height: 200px; }
-    //             .info { margin-bottom: 10px; }
-    //             .footer { margin-top: 20px; text-align: center; font-size: 12px; }
-    //           </style>
-    //         </head>
-    //         <body>
-    //           <div class="ticket">
-    //             <div class="header">
-    //               <h2>Ticket de Estacionamento</h2>
-    //               <h3>${ticket.estacionamento.nome}</h3>
-    //             </div>
-    //             <div class="qrcode">
-    //               <img src="data:image/png;base64,${ticket.qrCode}" alt="QR Code" />
-    //             </div>
-    //             <div class="info">
-    //               <p><strong>Entrada:</strong> ${formatDateTime(ticket.hr_entrada)}</p>
-    //               <p><strong>Token:</strong> ${ticket.token.substring(0, 8)}...</p>
-    //             </div>
-    //             <div class="footer">
-    //               <p>Apresente este ticket na saída</p>
-    //               <p>${ticket.estacionamento.endereco}</p>
-    //             </div>
-    //           </div>
-    //           <script>
-    //             window.onload = function() { window.print(); }
-    //           </script>
-    //         </body>
-    //       </html>
-    //     `);
-    // printWindow.document.close();
+    // Abre uma nova janela com o ticket para impressão
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+          <html>
+            <head>
+              <title>Ticket de Estacionamento</title>
+              <style>
+                body { font-family: Arial; margin: 0; padding: 20px; }
+                .ticket { border: 1px solid #ccc; padding: 20px; max-width: 300px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .qrcode { text-align: center; margin: 20px 0; }
+                .qrcode img { width: 200px; height: 200px; }
+                .info { margin-bottom: 10px; }
+                .footer { margin-top: 20px; text-align: center; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="ticket">
+                <div class="header">
+                  <h2>Ticket de Estacionamento</h2>
+                  <h3>${ticket.estacionamento?.nome || '-'}</h3>
+                </div>
+                <div class="qrcode">
+                  <img src="data:image/png;base64,${ticket.qrCodeBase64}" alt="QR Code" />
+                </div>
+                <div class="info">
+                  <p><strong>Entrada:</strong> ${formatDateTime(ticket.hrEntrada)}</p>
+                  <p><strong>Token:</strong> ${ticket.qrCodeToken.substring(0, 8)}...</p>
+                </div>
+                <div class="footer">
+                  <p>Apresente este ticket na saída</p>
+                  <p>${ticket.estacionamento?.endereco || '-'}</p>
+                </div>
+              </div>
+              <script>
+                window.onload = function() { window.print(); }
+              </script>
+            </body>
+          </html>
+        `);
+    printWindow.document.close();
+  };
+
+  const handleQrCodeModal = (ticket) => {
+    setSelectedTicket(ticket);
+    setQrCodeModalOpen(true);
   };
 
   const qrCodeModal = () => {
-    enqueueSnackbar("Vizualização de QRcode não implementada nesta versão", {variant: "info"})
+    return (
+      <Dialog open={qrCodeModalOpen} onClose={() => setQrCodeModalOpen(false)}>
+        <DialogTitle>QR Code do Ticket</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            {selectedTicket && (
+              <img 
+                src={`data:image/png;base64,${selectedTicket.qrCodeBase64}`}
+                alt="QR Code"
+                style={{ width: 200, height: 200 }}
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setQrCodeModalOpen(false)}>Fechar</Button>
+        </DialogActions>
+      </Dialog>
+    );
   };
 
   const handleClipbordCopypboard = async (token) => {
@@ -226,8 +255,10 @@ const Tickets = () => {
 
           {!params.row.pago && !params.row.hrSaida && (
             <IconButton
-              onClick={qrCodeModal}
-             color="secondary" size="small">
+              onClick={() => handleQrCodeModal(params.row)}
+              color="secondary" 
+              size="small"
+            >
               <QrCodeIcon fontSize="small" />
             </IconButton>
           )}
@@ -245,6 +276,7 @@ const Tickets = () => {
   return (
     <div>
       <LoadingOverlay open={loading} />
+      {qrCodeModal()}
 
       <PageHeader
         title="Tickets"

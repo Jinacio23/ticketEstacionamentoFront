@@ -167,7 +167,7 @@ export default function Login() {
           >
             {loading ? "Entrando..." : "Entrar"}
           </Button>
-          <Grid container>
+          {/* <Grid container>
             <Grid item xs>
               <Link href="#" variant="body2">
                 Esqueceu sua senha?
@@ -178,7 +178,7 @@ export default function Login() {
                 {"Não tem uma conta? Registre-se"}
               </Link>
             </Grid>
-          </Grid>
+          </Grid> */}
         </Box>
       </Paper>
 

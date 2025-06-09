@@ -7,6 +7,8 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  TextField,
+  MenuItem,
 } from "@mui/material";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
@@ -30,6 +32,7 @@ import StatusBadge from "../../components/common/StatusBadge";
 import estacionamentoService from "../../services/estacionamentoService";
 import ticketService from "../../services/ticketService";
 import { formatCurrency } from "../../utils/formatters";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -87,6 +90,7 @@ const DashboardCard = ({ title, value, icon, color, loading }) => {
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [estacionamentos, setEstacionamentos] = useState([]);
+  const [estacionamentoSelecionado, setEstacionamentoSelecionado] = useState("todos");
   const [estatisticas, setEstatisticas] = useState({
     totalEstacionamentos: 0,
     estacionamentosAtivos: 0,
@@ -96,21 +100,31 @@ const Dashboard = () => {
     faturamentoHoje: 0,
   });
 
+  const { isAdmin } = useAuth();
+
+  const handleEstacionamentoChange = (event) => {
+    setEstacionamentoSelecionado(event.target.value);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
         // Buscar estacionamentos
-        const estacionamentosData =
-          await estacionamentoService.listarEstacionamentos();
+        const estacionamentosData = await estacionamentoService.listarEstacionamentos();
         setEstacionamentos(estacionamentosData);
 
+        // Filtrar estacionamentos baseado na seleção
+        const estacionamentosFiltrados = estacionamentoSelecionado === "todos" 
+          ? estacionamentosData
+          : estacionamentosData.filter(e => e.id.toString() === estacionamentoSelecionado);
+
         // Calcular estatísticas
-        const estacionamentosAtivos = estacionamentosData.filter(
+        const estacionamentosAtivos = estacionamentosFiltrados.filter(
           (e) => e.status
         ).length;
-        const totalVagas = estacionamentosData.reduce(
+        const totalVagas = estacionamentosFiltrados.reduce(
           (acc, e) => acc + e.qtd_vagas,
           0
         );
@@ -119,14 +133,14 @@ const Dashboard = () => {
         let ticketsAtivos = 0;
         let vagasOcupadas = 0;
 
-        for (const est of estacionamentosData.filter((e) => e.status)) {
+        for (const est of estacionamentosFiltrados.filter((e) => e.status)) {
           const tickets = await ticketService.listarTicketsAtivos(est.id);
           ticketsAtivos += tickets.length;
           vagasOcupadas += tickets.length;
         }
 
         setEstatisticas({
-          totalEstacionamentos: estacionamentosData.length,
+          totalEstacionamentos: estacionamentosFiltrados.length,
           estacionamentosAtivos,
           totalVagas,
           vagasDisponiveis: totalVagas - vagasOcupadas,
@@ -142,15 +156,19 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [estacionamentoSelecionado]); // Adicionar estacionamentoSelecionado como dependência
 
   // Dados para o gráfico de ocupação
   const ocupacaoData = {
-    labels: estacionamentos.filter((e) => e.status).map((e) => e.nome),
+    labels: estacionamentos
+      .filter((e) => e.status && (estacionamentoSelecionado === "todos" || e.id.toString() === estacionamentoSelecionado))
+      .map((e) => e.nome),
     datasets: [
       {
         label: "Vagas Totais",
-        data: estacionamentos.filter((e) => e.status).map((e) => e.qtd_vagas),
+        data: estacionamentos
+          .filter((e) => e.status && (estacionamentoSelecionado === "todos" || e.id.toString() === estacionamentoSelecionado))
+          .map((e) => e.qtd_vagas),
         backgroundColor: "rgba(53, 162, 235, 0.5)",
       },
     ],
@@ -174,6 +192,31 @@ const Dashboard = () => {
       <LoadingOverlay open={loading} message="Carregando dashboard..." />
 
       <PageHeader title="Dashboard" subtitle="Visão geral do sistema" />
+
+      {/* Filtro de Estacionamento - Apenas para Admin */}
+      {isAdmin && (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                select
+                label="Estacionamento"
+                value={estacionamentoSelecionado}
+                onChange={handleEstacionamentoChange}
+                fullWidth
+                variant="outlined"
+              >
+                <MenuItem value="todos">Todos os Estacionamentos</MenuItem>
+                {estacionamentos.map((option) => (
+                  <MenuItem key={option.id} value={option.id.toString()}>
+                    {option.nome}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
 
       {/* Cards de estatísticas */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -218,8 +261,32 @@ const Dashboard = () => {
       {/* Gráficos e tabelas */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, height: "100%" }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper 
+            elevation={2}
+            sx={{ 
+              p: 3, 
+              height: "100%",
+              borderRadius: 2,
+              transition: "box-shadow 0.3s ease-in-out",
+              "&:hover": {
+                boxShadow: 3
+              }
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{ 
+                fontWeight: 600,
+                fontSize: "1.1rem",
+                color: "text.primary",
+                mb: 3,
+                display: "flex",
+                alignItems: "center",
+                gap: 1
+              }}
+            >
+              <DirectionsCarIcon sx={{ color: "primary.main" }} />
               Ocupação por Estacionamento
             </Typography>
             {loading ? (
@@ -229,20 +296,53 @@ const Dashboard = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   height: 300,
+                  bgcolor: "background.paper",
+                  borderRadius: 1
                 }}
               >
                 <CircularProgress />
               </Box>
             ) : (
-              <Box sx={{ height: 300 }}>
+              <Box 
+                sx={{ 
+                  height: 300,
+                  bgcolor: "background.paper",
+                  borderRadius: 1,
+                  p: 2
+                }}
+              >
                 <Bar options={ocupacaoOptions} data={ocupacaoData} />
               </Box>
             )}
           </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: "100%" }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper 
+            elevation={2}
+            sx={{ 
+              p: 3, 
+              height: "100%",
+              borderRadius: 2,
+              transition: "box-shadow 0.3s ease-in-out",
+              "&:hover": {
+                boxShadow: 3
+              }
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{ 
+                fontWeight: 600,
+                fontSize: "1.1rem",
+                color: "text.primary",
+                mb: 3,
+                display: "flex",
+                alignItems: "center",
+                gap: 1
+              }}
+            >
+              <LocalParkingIcon sx={{ color: "primary.main" }} />
               Status dos Estacionamentos
             </Typography>
             {loading ? (
@@ -252,12 +352,21 @@ const Dashboard = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   height: 300,
+                  bgcolor: "background.paper",
+                  borderRadius: 1
                 }}
               >
                 <CircularProgress />
               </Box>
             ) : (
-              <Box sx={{ mt: 2 }}>
+              <Box 
+                sx={{ 
+                  mt: 2,
+                  bgcolor: "background.paper",
+                  borderRadius: 1,
+                  overflow: "hidden"
+                }}
+              >
                 {estacionamentos.map((estacionamento) => (
                   <Box
                     key={estacionamento.id}
@@ -265,11 +374,27 @@ const Dashboard = () => {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      py: 1.5,
-                      borderBottom: "1px solid #eee",
+                      py: 2,
+                      px: 2,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      transition: "all 0.2s ease-in-out",
+                      "&:last-child": {
+                        borderBottom: "none"
+                      },
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                        transform: "translateX(6px)"
+                      }
                     }}
                   >
-                    <Typography variant="body1">
+                    <Typography 
+                      variant="body1"
+                      sx={{ 
+                        fontWeight: 500,
+                        color: "text.primary"
+                      }}
+                    >
                       {estacionamento.nome}
                     </Typography>
                     <StatusBadge status={estacionamento.status} />
