@@ -26,6 +26,7 @@ import StatusBadge from "../../components/common/StatusBadge";
 import ConfirmationDialog from "../../components/common/ConfirmationDialog";
 import estacionamentoService from "../../services/estacionamentoService";
 import { formatCurrency } from "../../utils/formatters";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Estacionamentos = () => {
   const navigate = useNavigate();
@@ -39,6 +40,8 @@ const Estacionamentos = () => {
     id: null,
     status: null,
   });
+
+  const { isAdmin } = useAuth();
 
   // Carregar dados dos estacionamentos
   const fetchEstacionamentos = async () => {
@@ -145,35 +148,39 @@ const Estacionamentos = () => {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title={params.row.status ? "Desativar" : "Ativar"}>
-            <IconButton
-              onClick={() =>
-                setToggleDialog({
-                  open: true,
-                  id: params.row.id,
-                  status: params.row.status,
-                })
-              }
-              color={params.row.status ? "success" : "default"}
-              size="small"
-            >
-              {params.row.status ? (
-                <ToggleOnIcon fontSize="small" />
-              ) : (
-                <ToggleOffIcon fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
+          {isAdmin && (
+            <>
+              <Tooltip title={params.row.status ? "Desativar" : "Ativar"}>
+                <IconButton
+                  onClick={() =>
+                    setToggleDialog({
+                      open: true,
+                      id: params.row.id,
+                      status: params.row.status,
+                    })
+                  }
+                  color={params.row.status ? "success" : "default"}
+                  size="small"
+                >
+                  {params.row.status ? (
+                    <ToggleOnIcon fontSize="small" />
+                  ) : (
+                    <ToggleOffIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title="Excluir">
-            <IconButton
-              onClick={() => setDeleteDialog({ open: true, id: params.row.id })}
-              color="error"
-              size="small"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <Tooltip title="Excluir">
+                <IconButton
+                  onClick={() => setDeleteDialog({ open: true, id: params.row.id })}
+                  color="error"
+                  size="small"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
         </Box>
       ),
     },

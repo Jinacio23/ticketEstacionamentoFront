@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Verificar token existente ao iniciar a aplicação
   useEffect(() => {
@@ -26,6 +27,12 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (user?.roles?.includes("ADMIN")) {
+      setIsAdmin(true);
+    }
+  }, [user]);
   
   // Validar o token no backend
   const validateToken = async () => {
@@ -85,10 +92,12 @@ export function AuthProvider({ children }) {
     
     // Limpar estado do usuário
     setUser(null);
+    window.location.reload();
   };
 
   // Valor fornecido pelo contexto
   const value = {
+    isAdmin,
     user,
     loading,
     error,
