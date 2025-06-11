@@ -305,10 +305,12 @@ const Dashboard = () => {
             ) : (
               <Box 
                 sx={{ 
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
                   height: 300,
                   bgcolor: "background.paper",
-                  borderRadius: 1,
-                  p: 2
+                  borderRadius: 1
                 }}
               >
                 <Bar options={ocupacaoOptions} data={ocupacaoData} />
