@@ -127,24 +127,19 @@ const Relatorios = () => {
         let ticketsData = [];
         let totalFaturamento = 0;
 
-        // Se for admin, busca tickets de todos os estacionamentos independente da seleção
-        if (isAdmin) {
+        // Buscar tickets baseado na seleção do estacionamento
+        if (estacionamentoSelecionado === "todos") {
+          // Se "todos" selecionado, busca de todos os estacionamentos
           for (const est of estacionamentos) {
             const estTickets = await ticketService.listarTicketsPorEstacionamento(est.id);
             ticketsData = [...ticketsData, ...estTickets];
           }
         } else {
-          // Para usuários não admin, segue a lógica normal de filtro por estacionamento
-          for (const est of estacionamentos) {
-            if (
-              estacionamentoSelecionado === "todos" ||
-              parseInt(estacionamentoSelecionado) === est.id
-            ) {
-              const estTickets =
-                await ticketService.listarTicketsPorEstacionamento(est.id);
-              ticketsData = [...ticketsData, ...estTickets];
-            }
-          }
+          // Busca apenas do estacionamento selecionado
+          const estTickets = await ticketService.listarTicketsPorEstacionamento(
+            parseInt(estacionamentoSelecionado)
+          );
+          ticketsData = [...ticketsData, ...estTickets];
         }
 
         // Filtrar por data
@@ -202,7 +197,7 @@ const Relatorios = () => {
             ticketsPorDia[dateKey] += 1;
           }
         });
-
+        
         // Faturamento por estacionamento
         const faturamentoEstacionamento = {};
 
@@ -210,12 +205,38 @@ const Relatorios = () => {
           faturamentoEstacionamento[est.nome] = 0;
         });
 
-        ticketsFiltrados.forEach((ticket) => {
-          if (ticket.estacionamento && ticket.estacionamento.nome) {
-            faturamentoEstacionamento[ticket.estacionamento.nome] +=
-              ticket.valor;
+        // Se for admin, busca faturamento de todos os estacionamentos independente do filtro
+        if (isAdmin) {
+          let todosTickets = [];
+          for (const est of estacionamentos) {
+            const estTickets = await ticketService.listarTicketsPorEstacionamento(est.id);
+            todosTickets = [...todosTickets, ...estTickets];
           }
-        });
+          
+          // Filtra por data
+          const ticketsFiltradosPorData = todosTickets.filter((ticket) => {
+            const ticketDate = new Date(ticket.hrEntrada).getTime();
+            return (
+              ticketDate >= dataInicioTimestamp && ticketDate <= dataFimTimestamp
+            );
+          });
+
+          // Calcula faturamento por estacionamento
+          ticketsFiltradosPorData.forEach((ticket) => {
+            if (ticket.estacionamento && ticket.estacionamento.nome) {
+              faturamentoEstacionamento[ticket.estacionamento.nome] +=
+                ticket.valor;
+            }
+          });
+        } else {
+          // Para não admin, usa os tickets já filtrados
+          ticketsFiltrados.forEach((ticket) => {
+            if (ticket.estacionamento && ticket.estacionamento.nome) {
+              faturamentoEstacionamento[ticket.estacionamento.nome] +=
+                ticket.valor;
+            }
+          });
+        }
 
         // Preparar dados para os gráficos
         const faturamentoPorDia = Object.entries(diasPeriodo).map(
