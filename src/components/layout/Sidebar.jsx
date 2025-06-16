@@ -11,13 +11,17 @@ import {
   Divider,
   Toolbar,
 } from "@mui/material";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import LocalParkingIcon from "@mui/icons-material/LocalParking";
-import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
-import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
-import PaymentsIcon from "@mui/icons-material/Payments";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import SettingsIcon from "@mui/icons-material/Settings";
+import {
+  Dashboard as DashboardIcon,
+  LocalParking as LocalParkingIcon, 
+  ConfirmationNumber as ConfirmationNumberIcon,
+  QrCodeScanner as QrCodeScannerIcon,
+  Payments as PaymentsIcon,
+  Assessment as AssessmentIcon,
+  Settings as SettingsIcon,
+  AccountBox
+} from "@mui/icons-material";
+import { useAuth } from "../../contexts/AuthContext";
 
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
@@ -26,6 +30,7 @@ const menuItems = [
     icon: <LocalParkingIcon />,
     path: "/estacionamentos",
   },
+  { text: "Usuários", icon: <AccountBox />, path: "/usuarios" },
   { text: "Tickets", icon: <ConfirmationNumberIcon />, path: "/tickets" },
   {
     text: "Entrada de Veículos",
@@ -40,6 +45,12 @@ const menuItems = [
 const Sidebar = ({ open }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { isAdmin } = useAuth();
+
+  const filteredMenuItems = menuItems.filter(
+    (item) => item.text !== "Usuários" || isAdmin
+  );
 
   return (
     <Drawer
@@ -56,7 +67,7 @@ const Sidebar = ({ open }) => {
       <Toolbar />
       <Box sx={{ overflow: "auto" }}>
         <List>
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 selected={location.pathname === item.path}

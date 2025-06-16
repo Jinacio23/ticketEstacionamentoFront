@@ -25,6 +25,8 @@ import Relatorios from "./pages/Relatorios/Relatorios";
 import Configuracoes from "./pages/Configuracoes/Configuracoes";
 import NotFound from "./pages/NotFound/NotFound";
 import Login from "./pages/Login/login";
+import Usuarios from "./pages/Usuarios/Usuarios";
+import UsuarioForm from "./pages/Usuarios/UsuarioForm";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -116,6 +118,9 @@ function App() {
                   <Route path="/qrcode-scan" element={<QrCodeScan />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="/configuracoes" element={<Configuracoes />} />
+                  <Route path="/usuarios" element={<Usuarios />} />
+                  <Route path="/usuarios/novo" element={<UsuarioForm />} />
+                  <Route path="/usuarios/editar/:id" element={<UsuarioForm />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>
